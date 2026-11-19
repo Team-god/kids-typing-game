@@ -1,0 +1,1178 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kids English Typing & Dictation 🎮</title>
+    <!-- 載入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 載入適合小朋友閱讀的圓潤英文字體 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #e0f2fe 0%, #f0fdf4 50%, #fef3c7 100%);
+            min-height: 100vh;
+        }
+        .font-kid {
+            font-family: 'Fredoka', 'Inter', sans-serif;
+        }
+        /* 彈跳動畫（答對時觸發） */
+        @keyframes popBounce {
+            0% { transform: scale(1); }
+            40% { transform: scale(1.08); }
+            70% { transform: scale(0.97); }
+            100% { transform: scale(1); }
+        }
+        .animate-pop {
+            animation: popBounce 0.45s ease-out;
+        }
+        /* 搖晃動畫（答錯時觸發） */
+        @keyframes shakeError {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-8px); }
+            40%, 80% { transform: translateX(8px); }
+        }
+        .animate-shake {
+            animation: shakeError 0.4s ease-in-out;
+        }
+        /* 自訂滑桿樣式 */
+        input[type="range"] {
+            accent-color: #3b82f6;
+        }
+    </style>
+</head>
+<body class="text-slate-800 antialiased selection:bg-blue-200">
+
+    <!-- 主容器 -->
+    <div class="max-w-3xl mx-auto px-3 sm:px-6 py-4 sm:py-8">
+        
+        <!-- 頂部標題與計分列 -->
+        <header class="bg-white/90 backdrop-blur-md rounded-3xl shadow-lg border border-white p-4 sm:p-6 mb-5 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div class="flex items-center gap-3 text-center sm:text-left">
+                <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-500 to-indigo-500 text-white flex items-center justify-center text-2xl shadow-md shrink-0">
+                    🎮
+                </div>
+                <div>
+                    <h1 class="font-kid text-xl sm:text-2xl font-bold text-slate-800 tracking-wide">
+                        Kids English Typing
+                    </h1>
+                    <p class="text-xs sm:text-sm text-slate-500">跨平台英文打字與聽寫練習 (Windows / iOS / Android)</p>
+                </div>
+            </div>
+
+            <!-- 星星與連勝紀錄 -->
+            <div class="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
+                <!-- 雲端同步狀態徽章 -->
+                <button onclick="switchTab('settings')" id="cloudStatusBadge" title="點擊設定家庭雲端同步碼" class="flex items-center gap-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-3 py-2 rounded-2xl border border-emerald-200/80 text-xs sm:text-sm font-bold transition-all">
+                    <span id="cloudStatusDot" class="w-2 h-2 rounded-full bg-slate-400"></span>
+                    <span id="cloudStatusText">連線中...</span>
+                </button>
+
+                <div class="flex items-center gap-3 bg-slate-100 px-4 py-2 rounded-2xl border border-slate-200/80">
+                    <div class="flex items-center gap-1.5" title="累積答對星星">
+                        <span class="text-lg">⭐</span>
+                        <span id="scoreDisplay" class="font-kid font-bold text-lg text-amber-600">0</span>
+                    </div>
+                    <div class="w-px h-5 bg-slate-300"></div>
+                    <div class="flex items-center gap-1.5" title="連續答對次數">
+                        <span class="text-lg">🔥</span>
+                        <span id="streakDisplay" class="font-kid font-bold text-lg text-rose-500">0</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- 分頁導覽列 -->
+        <nav class="grid grid-cols-3 gap-2 sm:gap-3 bg-white/80 backdrop-blur p-2 rounded-2xl shadow-sm mb-5 border border-white">
+            <button id="nav-vocab" onclick="switchTab('vocab')" class="tab-btn py-2.5 sm:py-3 px-2 rounded-xl font-bold text-sm sm:text-base transition-all flex items-center justify-center gap-1.5 bg-blue-600 text-white shadow-md">
+                <span>🔤</span> <span>單字練習</span>
+            </button>
+            <button id="nav-dictation" onclick="switchTab('dictation')" class="tab-btn py-2.5 sm:py-3 px-2 rounded-xl font-bold text-sm sm:text-base transition-all flex items-center justify-center gap-1.5 text-slate-600 hover:bg-slate-100">
+                <span>🎧</span> <span>句子聽寫</span>
+            </button>
+            <button id="nav-settings" onclick="switchTab('settings')" class="tab-btn py-2.5 sm:py-3 px-2 rounded-xl font-bold text-sm sm:text-base transition-all flex items-center justify-center gap-1.5 text-slate-600 hover:bg-slate-100">
+                <span>⚙️</span> <span>課文設定</span>
+            </button>
+        </nav>
+
+        <!-- ========================================== -->
+        <!-- 分頁 1：單字打字練習 (Vocabulary Mode)      -->
+        <!-- ========================================== -->
+        <section id="tab-vocab" class="bg-white rounded-3xl shadow-xl border border-blue-100 p-5 sm:p-8 transition-all">
+            <div class="flex items-center justify-between mb-4">
+                <span class="px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-700">
+                    單字模式 • 看字與聽音
+                </span>
+                <span id="vocabMistakeBadge" class="hidden px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800">
+                    ⚠️ 重點溫習字
+                </span>
+            </div>
+
+            <!-- 題目顯示框 -->
+            <div id="vocabCard" class="bg-gradient-to-b from-sky-50 to-blue-50/70 border-2 border-blue-200 rounded-3xl p-6 sm:p-10 text-center mb-6 relative overflow-hidden">
+                <p id="vocabTargetWord" class="font-kid text-4xl sm:text-6xl font-bold text-blue-900 tracking-wider break-words select-none">
+                    撳「開始」準備！
+                </p>
+                <p id="vocabHintText" class="text-sm text-slate-500 mt-3">
+                    望住上面嘅英文單字，喺下面輸入框打返出嚟
+                </p>
+            </div>
+
+            <!-- 輸入與提交區 (關閉手機自動更正與大細階，避免干擾拼字練習) -->
+            <div class="flex flex-col sm:flex-row gap-3 mb-4">
+                <input 
+                    type="text" 
+                    id="vocabInput" 
+                    disabled
+                    placeholder="喺呢度輸入英文單字..."
+                    autocomplete="off" 
+                    autocorrect="off" 
+                    autocapitalize="off" 
+                    spellcheck="false"
+                    class="flex-1 text-center font-kid text-2xl sm:text-3xl py-3.5 px-4 rounded-2xl border-2 border-slate-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 outline-none transition-all disabled:bg-slate-100 disabled:text-slate-400"
+                >
+                <button 
+                    id="vocabSubmitBtn" 
+                    onclick="checkVocab()" 
+                    disabled
+                    class="py-3.5 px-6 rounded-2xl font-bold text-lg bg-emerald-500 hover:bg-emerald-600 active:translate-y-0.5 text-white shadow-md border-b-4 border-emerald-700 disabled:opacity-40 disabled:pointer-events-none transition-all shrink-0"
+                >
+                    確定 ✅
+                </button>
+            </div>
+
+            <!-- 即時回饋訊息 -->
+            <div id="vocabFeedback" class="min-h-[2.25rem] text-center font-bold text-lg sm:text-xl mb-5 flex items-center justify-center"></div>
+
+            <!-- 控制按鈕列 -->
+            <div class="flex flex-wrap items-center justify-center gap-3 mb-6">
+                <button id="vocabStartBtn" onclick="startVocab()" class="py-3 px-6 rounded-2xl font-bold text-base sm:text-lg bg-blue-600 hover:bg-blue-700 active:translate-y-0.5 text-white shadow-md border-b-4 border-blue-800 transition-all">
+                    🚀 開始練習
+                </button>
+                <button id="vocabSpeakBtn" onclick="speakCurrentVocab()" disabled class="py-3 px-6 rounded-2xl font-bold text-base sm:text-lg bg-sky-100 hover:bg-sky-200 active:translate-y-0.5 text-sky-800 border-b-4 border-sky-300 disabled:opacity-40 disabled:pointer-events-none transition-all">
+                    🔊 讀多次
+                </button>
+            </div>
+
+            <!-- 語速調節滑桿 -->
+            <div class="bg-slate-50 border border-slate-200/80 rounded-2xl p-3.5 flex items-center justify-center gap-3 max-w-md mx-auto">
+                <span class="text-sm font-bold text-slate-600 whitespace-nowrap">🐢 慢</span>
+                <input type="range" id="vocabSpeedSlider" min="0.5" max="1.5" step="0.1" value="0.9" oninput="syncSpeed(this.value)" class="w-full cursor-pointer">
+                <span class="text-sm font-bold text-slate-600 whitespace-nowrap">快 🐇</span>
+                <span id="vocabSpeedLabel" class="text-xs font-bold bg-white px-2 py-1 rounded-lg border border-slate-200 text-blue-600 min-w-[3.2rem] text-center">0.9x</span>
+            </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- 分頁 2：句子聽寫挑戰 (Dictation Mode)       -->
+        <!-- ========================================== -->
+        <section id="tab-dictation" class="hidden bg-white rounded-3xl shadow-xl border border-rose-100 p-5 sm:p-8 transition-all">
+            <div class="flex items-center justify-between mb-4">
+                <span class="px-3 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-700">
+                    聽寫挑戰 • 訓練英文聽力
+                </span>
+                <span id="dictMistakeBadge" class="hidden px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800">
+                    ⚠️ 重點溫習句
+                </span>
+            </div>
+
+            <!-- 聽寫提示框 -->
+            <div id="dictCard" class="bg-gradient-to-b from-rose-50 to-pink-50/70 border-2 border-rose-200 rounded-3xl p-6 sm:p-8 text-center mb-6">
+                <div class="text-4xl sm:text-5xl mb-3">🎧</div>
+                <p id="dictStatusText" class="font-bold text-lg sm:text-xl text-rose-900 mb-2">
+                    撳「開始聽寫」聽句子！
+                </p>
+                <p class="text-xs sm:text-sm text-slate-500">
+                    （小貼士：唔小心打漏標點符號或者大細階錯咗都計啱！）
+                </p>
+                <!-- 答錯時顯示正確答案 -->
+                <div id="dictAnswerBox" class="hidden mt-4 p-3.5 bg-white rounded-2xl border border-rose-200 text-left">
+                    <p class="text-xs font-bold text-rose-500 mb-1">正確句子：</p>
+                    <p id="dictCorrectSentence" class="font-kid text-lg sm:text-xl text-slate-800"></p>
+                </div>
+            </div>
+
+            <!-- 輸入與提交區 -->
+            <div class="flex flex-col sm:flex-row gap-3 mb-4">
+                <input 
+                    type="text" 
+                    id="dictInput" 
+                    disabled
+                    placeholder="聽完語音後，喺度打出成句..."
+                    autocomplete="off" 
+                    autocorrect="off" 
+                    autocapitalize="off" 
+                    spellcheck="false"
+                    class="flex-1 text-center font-kid text-lg sm:text-2xl py-3.5 px-4 rounded-2xl border-2 border-slate-300 focus:border-rose-500 focus:ring-4 focus:ring-rose-100 outline-none transition-all disabled:bg-slate-100 disabled:text-slate-400"
+                >
+                <button 
+                    id="dictSubmitBtn" 
+                    onclick="checkDictation()" 
+                    disabled
+                    class="py-3.5 px-6 rounded-2xl font-bold text-lg bg-emerald-500 hover:bg-emerald-600 active:translate-y-0.5 text-white shadow-md border-b-4 border-emerald-700 disabled:opacity-40 disabled:pointer-events-none transition-all shrink-0"
+                >
+                    確定 ✅
+                </button>
+            </div>
+
+            <!-- 即時回饋訊息 -->
+            <div id="dictFeedback" class="min-h-[2.25rem] text-center font-bold text-lg sm:text-xl mb-5 flex items-center justify-center"></div>
+
+            <!-- 控制按鈕列 -->
+            <div class="flex flex-wrap items-center justify-center gap-3 mb-6">
+                <button id="dictStartBtn" onclick="startDictation()" class="py-3 px-6 rounded-2xl font-bold text-base sm:text-lg bg-rose-600 hover:bg-rose-700 active:translate-y-0.5 text-white shadow-md border-b-4 border-rose-800 transition-all">
+                    🚀 開始聽寫
+                </button>
+                <button id="dictSpeakBtn" onclick="speakCurrentSentence()" disabled class="py-3 px-6 rounded-2xl font-bold text-base sm:text-lg bg-sky-100 hover:bg-sky-200 active:translate-y-0.5 text-sky-800 border-b-4 border-sky-300 disabled:opacity-40 disabled:pointer-events-none transition-all">
+                    🔊 讀多次
+                </button>
+            </div>
+
+            <!-- 語速調節滑桿 -->
+            <div class="bg-slate-50 border border-slate-200/80 rounded-2xl p-3.5 flex items-center justify-center gap-3 max-w-md mx-auto">
+                <span class="text-sm font-bold text-slate-600 whitespace-nowrap">🐢 慢</span>
+                <input type="range" id="dictSpeedSlider" min="0.5" max="1.5" step="0.1" value="0.9" oninput="syncSpeed(this.value)" class="w-full cursor-pointer">
+                <span class="text-sm font-bold text-slate-600 whitespace-nowrap">快 🐇</span>
+                <span id="dictSpeedLabel" class="text-xs font-bold bg-white px-2 py-1 rounded-lg border border-slate-200 text-rose-600 min-w-[3.2rem] text-center">0.9x</span>
+            </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- 分頁 3：家長課文與單字設定 (Settings Mode)   -->
+        <!-- ========================================== -->
+        <section id="tab-settings" class="hidden space-y-5">
+            
+            <!-- 雲端自動同步與分享卡片 -->
+            <div class="bg-white rounded-3xl shadow-md border border-emerald-200 p-5 sm:p-6 space-y-4">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                        <h2 class="font-bold text-lg text-slate-800 flex items-center gap-2">
+                            <span>☁️</span> <span>雲端自動同步 (跨裝置即時更新)</span>
+                        </h2>
+                        <p class="text-xs sm:text-sm text-slate-500 mt-0.5">
+                            只要唔同裝置（電腦、iPad、手機）連線到同一個「家庭同步碼」，課文同錯題進度就會自動即時同步！
+                        </p>
+                    </div>
+                </div>
+
+                <!-- 目前家庭同步碼顯示與複製 -->
+                <div class="bg-emerald-50/80 border border-emerald-200 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+                    <div class="text-center sm:text-left">
+                        <span class="text-xs font-bold text-emerald-700 block">目前家庭同步碼：</span>
+                        <span id="currentRoomCodeDisplay" class="font-mono text-2xl font-bold tracking-widest text-emerald-900 select-all">------</span>
+                    </div>
+                    <div class="flex flex-wrap justify-center gap-2">
+                        <button onclick="copyCloudShareLink()" class="py-2.5 px-4 rounded-xl font-bold text-sm bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition-all flex items-center gap-1.5">
+                            <span>🔗</span> <span>複製雲端同步連結</span>
+                        </button>
+                        <button onclick="createNewCloudRoom()" class="py-2.5 px-3.5 rounded-xl font-bold text-sm bg-white hover:bg-emerald-100 text-emerald-800 border border-emerald-300 transition-all">
+                            ✨ 產生新同步碼
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 輸入其他裝置同步碼以配對 -->
+                <div class="flex flex-col sm:flex-row gap-2 pt-1">
+                    <input type="text" id="joinRoomInput" maxlength="10" placeholder="想同步另一部機？喺度輸入6位同步碼..." class="flex-1 px-4 py-2.5 rounded-xl border border-slate-300 focus:border-emerald-500 outline-none text-sm uppercase font-mono">
+                    <button onclick="joinCloudRoomByInput()" class="py-2.5 px-5 rounded-xl font-bold text-sm bg-slate-800 hover:bg-slate-900 text-white shadow-sm shrink-0">
+                        🔄 配對並同步
+                    </button>
+                </div>
+
+                <!-- 離線備份選項 -->
+                <div class="border-t border-slate-100 pt-3 flex flex-wrap items-center gap-2">
+                    <span class="text-xs text-slate-400 mr-1">本機檔案備份：</span>
+                    <button onclick="exportJsonFile()" class="py-1.5 px-3 rounded-lg font-bold text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 transition-all flex items-center gap-1">
+                        <span>📥</span> <span>下載課文檔 (.json)</span>
+                    </button>
+                    <label class="py-1.5 px-3 rounded-lg font-bold text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 transition-all flex items-center gap-1 cursor-pointer">
+                        <span>📤</span> <span>匯入課文檔</span>
+                        <input type="file" accept=".json" onchange="importJsonFile(event)" class="hidden">
+                    </label>
+                </div>
+            </div>
+
+            <!-- 快速新增課文與單字 -->
+            <div class="bg-white rounded-3xl shadow-md border border-slate-200 p-5 sm:p-6 space-y-5">
+                <div>
+                    <label class="block font-bold text-base text-slate-800 mb-1.5">
+                        ➕ 快速新增英文單字
+                    </label>
+                    <div class="flex gap-2">
+                        <input type="text" id="addVocabInput" placeholder="輸入單字 (可用逗號分隔多個字，例如: apple, banana)" class="flex-1 px-4 py-2.5 rounded-xl border border-slate-300 focus:border-blue-500 outline-none text-sm sm:text-base">
+                        <button onclick="addVocabWords()" class="py-2.5 px-5 rounded-xl font-bold text-sm bg-blue-600 hover:bg-blue-700 text-white shadow-sm shrink-0">
+                            加入單字
+                        </button>
+                    </div>
+                </div>
+
+                <div class="border-t border-slate-100 pt-4">
+                    <label class="block font-bold text-base text-slate-800 mb-1.5">
+                        📝 貼上整段英文課文 (系統會自動分句)
+                    </label>
+                    <textarea id="addPassageInput" rows="4" placeholder="直接喺度貼上學校課文段落，系統會自動按句號、問號、感嘆號拆成一句句..." class="w-full p-3.5 rounded-xl border border-slate-300 focus:border-blue-500 outline-none text-sm sm:text-base mb-2.5"></textarea>
+                    <button onclick="addPassageSentences()" class="py-2.5 px-5 rounded-xl font-bold text-sm bg-rose-600 hover:bg-rose-700 text-white shadow-sm">
+                        自動分句並加入聽寫庫
+                    </button>
+                </div>
+            </div>
+
+            <!-- 直接管理與修改現有內容 -->
+            <div class="bg-white rounded-3xl shadow-md border border-slate-200 p-5 sm:p-6 space-y-4">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                        <h2 class="font-bold text-lg text-slate-800">🛠️ 管理與修改已儲存題庫</h2>
+                        <p class="text-xs text-slate-500">可以直接喺下面文字框修改、刪除或者重新編排（每行一題）</p>
+                    </div>
+                    <button onclick="openResetConfirm()" class="text-xs font-bold text-rose-600 hover:text-rose-700 bg-rose-50 px-3 py-1.5 rounded-lg border border-rose-200 self-start sm:self-auto">
+                        清除錯題記錄
+                    </button>
+                </div>
+
+                <div>
+                    <div class="flex items-center justify-between mb-1">
+                        <label class="font-bold text-sm text-blue-800">單字題庫 (每行一個單字)：</label>
+                        <span id="vocabCountTag" class="text-xs font-bold text-slate-500">0 個單字</span>
+                    </div>
+                    <textarea id="manageVocabArea" rows="5" class="w-full p-3 rounded-xl border border-slate-300 focus:border-blue-500 outline-none font-mono text-sm bg-slate-50"></textarea>
+                </div>
+
+                <div>
+                    <div class="flex items-center justify-between mb-1">
+                        <label class="font-bold text-sm text-rose-800">句子聽寫題庫 (每行一句)：</label>
+                        <span id="sentenceCountTag" class="text-xs font-bold text-slate-500">0 句句子</span>
+                    </div>
+                    <textarea id="manageSentenceArea" rows="6" class="w-full p-3 rounded-xl border border-slate-300 focus:border-rose-500 outline-none font-mono text-sm bg-slate-50"></textarea>
+                </div>
+
+                <div class="flex items-center justify-between pt-2">
+                    <div id="mistakeSummaryText" class="text-xs text-slate-500"></div>
+                    <button onclick="saveManagedChanges()" class="py-3 px-6 rounded-xl font-bold text-sm sm:text-base bg-emerald-600 hover:bg-emerald-700 text-white shadow-md">
+                        💾 儲存所有修改
+                    </button>
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- 自訂提示訊息 Toast (取代 alert) -->
+    <div id="toastNotification" class="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 pointer-events-none opacity-0 transition-all duration-300 transform translate-y-4">
+        <div id="toastContent" class="bg-slate-800 text-white px-5 py-3 rounded-2xl shadow-xl font-bold text-sm sm:text-base flex items-center gap-2">
+        </div>
+    </div>
+
+    <!-- 自訂確認視窗 Modal (取代 confirm) -->
+    <div id="confirmModal" class="hidden fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-100">
+            <h3 class="font-bold text-lg text-slate-800 mb-2">確定清除錯題記錄？</h3>
+            <p class="text-sm text-slate-600 mb-5">清除之後，所有單字同句子嘅出現機率會恢復為一樣，但唔會刪除你輸入過嘅課文同單字。</p>
+            <div class="flex justify-end gap-2.5">
+                <button onclick="closeResetConfirm()" class="px-4 py-2 rounded-xl font-bold text-sm bg-slate-100 hover:bg-slate-200 text-slate-700">取消</button>
+                <button onclick="confirmResetMistakes()" class="px-4 py-2 rounded-xl font-bold text-sm bg-rose-600 hover:bg-rose-700 text-white">確定清除</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // 1. 遊戲資料狀態 (預設內建小學常用字與句子)
+        // ==========================================
+        let gameData = {
+            vocab: [
+                "apple",
+                "elephant",
+                "beautiful",
+                "library",
+                "playground",
+                "butterfly",
+                "adventure",
+                "wonderful"
+            ],
+            sentences: [
+                "Today is a sunny day and we are going to the park.",
+                "I like to read English storybooks every night.",
+                "My favorite animal at the zoo is the giant panda.",
+                "Please remember to bring your water bottle to school."
+            ],
+            mistakes: {}, // 記錄錯題次數：{ "apple": 2 }
+            speechRate: 0.9
+        };
+
+        let score = 0;
+        let streak = 0;
+        let currentVocab = "";
+        let currentSentence = "";
+        let isVocabLocked = false;
+        let isDictLocked = false;
+        let englishVoice = null;
+        let isApplyingRemoteUpdate = false;
+        let saveDebounceTimer = null;
+
+        // 觸發雲端自動儲存（加入防抖動延遲，避免拉動滑桿時頻繁寫入）
+        function triggerCloudSave(immediate = false) {
+            if (isApplyingRemoteUpdate) return;
+            if (typeof window.pushGameDataToCloud !== 'function') return;
+
+            clearTimeout(saveDebounceTimer);
+            if (immediate) {
+                window.pushGameDataToCloud();
+            } else {
+                saveDebounceTimer = setTimeout(() => {
+                    window.pushGameDataToCloud();
+                }, 500);
+            }
+        }
+
+        // ==========================================
+        // 2. 初始化與跨平台語音設定 (Windows / iOS / Android)
+        // ==========================================
+        window.addEventListener('DOMContentLoaded', () => {
+            loadFromUrlHash();
+            initSpeechVoices();
+            refreshManagementUI();
+            updateScoreUI();
+
+            // 綁定鍵盤 Enter 鍵提交
+            document.getElementById('vocabInput').addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    checkVocab();
+                }
+            });
+            document.getElementById('dictInput').addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    checkDictation();
+                }
+            });
+        });
+
+        function initSpeechVoices() {
+            if (!('speechSynthesis' in window)) {
+                showToast("⚠️ 呢個瀏覽器暫時唔支援語音朗讀功能", "warning");
+                return;
+            }
+            const pickVoice = () => {
+                const voices = window.speechSynthesis.getVoices();
+                if (!voices || voices.length === 0) return;
+                englishVoice =
+                    voices.find(v => v.lang === 'en-US' && (v.name.includes('Google') || v.name.includes('Samantha') || v.name.includes('Natural'))) ||
+                    voices.find(v => v.lang === 'en-US') ||
+                    voices.find(v => v.lang && v.lang.startsWith('en')) ||
+                    null;
+            };
+            pickVoice();
+            if (window.speechSynthesis.onvoiceschanged !== undefined) {
+                window.speechSynthesis.onvoiceschanged = pickVoice;
+            }
+        }
+
+        function syncSpeed(val, skipSave = false) {
+            const rate = parseFloat(val);
+            gameData.speechRate = rate;
+            document.getElementById('vocabSpeedSlider').value = rate;
+            document.getElementById('dictSpeedSlider').value = rate;
+            document.getElementById('vocabSpeedLabel').textContent = rate.toFixed(1) + 'x';
+            document.getElementById('dictSpeedLabel').textContent = rate.toFixed(1) + 'x';
+            if (!skipSave) {
+                triggerCloudSave(false);
+            }
+        }
+
+        function speakText(text) {
+            if (!text || !('speechSynthesis' in window)) return;
+            try {
+                // 先停止上一句未讀完嘅語音（防止 iOS Safari 語音隊列卡住）
+                window.speechSynthesis.cancel();
+
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'en-US';
+                if (englishVoice) {
+                    utterance.voice = englishVoice;
+                }
+                utterance.rate = parseFloat(gameData.speechRate) || 0.9;
+                utterance.pitch = 1.0;
+
+                window.speechSynthesis.speak(utterance);
+            } catch (err) {
+                console.error("TTS Error:", err);
+            }
+        }
+
+        // ==========================================
+        // 3. 音效回饋 (純 Web Audio API，無需外部檔案)
+        // ==========================================
+        function playToneEffect(type) {
+            try {
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                if (!AudioCtx) return;
+                const ctx = new AudioCtx();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+
+                const now = ctx.currentTime;
+                if (type === 'success') {
+                    // 清脆上升雙音
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(523.25, now); // C5
+                    osc.frequency.setValueAtTime(659.25, now + 0.1); // E5
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+                    osc.start(now);
+                    osc.stop(now + 0.35);
+                } else {
+                    // 溫和低音提示
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(220, now);
+                    osc.frequency.linearRampToValueAtTime(180, now + 0.25);
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
+                    osc.start(now);
+                    osc.stop(now + 0.28);
+                }
+            } catch (e) {
+                // 忽略靜音模式限制
+            }
+        }
+
+        // ==========================================
+        // 4. 適應性記憶演算法 (錯得越多，出現機率越高)
+        // ==========================================
+        function getWeightedRandomItem(items, currentItem) {
+            if (!items || items.length === 0) return null;
+            
+            // 如果題庫多於 1 題，確保下一題絕對唔會同上一題重複
+            let candidates = items;
+            if (items.length > 1 && currentItem && items.includes(currentItem)) {
+                candidates = items.filter(item => item !== currentItem);
+            }
+
+            // 計算權重：基礎權重 1 + (錯誤次數 * 2)
+            let totalWeight = 0;
+            const weights = candidates.map(item => {
+                const mistakes = gameData.mistakes[item] || 0;
+                const w = 1 + (mistakes * 2);
+                totalWeight += w;
+                return w;
+            });
+
+            let randomVal = Math.random() * totalWeight;
+            for (let i = 0; i < candidates.length; i++) {
+                randomVal -= weights[i];
+                if (randomVal <= 0) {
+                    return candidates[i];
+                }
+            }
+            return candidates[candidates.length - 1];
+        }
+
+        function recordMistake(item) {
+            gameData.mistakes[item] = (gameData.mistakes[item] || 0) + 1;
+            streak = 0;
+            updateScoreUI();
+            triggerCloudSave(true);
+        }
+
+        function recordSuccess(item) {
+            if (gameData.mistakes[item] && gameData.mistakes[item] > 0) {
+                gameData.mistakes[item] -= 1;
+                if (gameData.mistakes[item] <= 0) {
+                    delete gameData.mistakes[item];
+                }
+            }
+            score += 1;
+            streak += 1;
+            updateScoreUI();
+            triggerCloudSave(true);
+        }
+
+        function updateScoreUI() {
+            document.getElementById('scoreDisplay').textContent = score;
+            document.getElementById('streakDisplay').textContent = streak;
+        }
+
+        // ==========================================
+        // 5. 分頁切換邏輯
+        // ==========================================
+        function switchTab(tabName) {
+            // 隱藏所有分頁
+            ['vocab', 'dictation', 'settings'].forEach(name => {
+                document.getElementById(`tab-${name}`).classList.add('hidden');
+                const btn = document.getElementById(`nav-${name}`);
+                btn.className = "tab-btn py-2.5 sm:py-3 px-2 rounded-xl font-bold text-sm sm:text-base transition-all flex items-center justify-center gap-1.5 text-slate-600 hover:bg-slate-100";
+            });
+
+            // 顯示選中分頁
+            document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`nav-${tabName}`);
+            const colorMap = {
+                vocab: 'bg-blue-600 text-white shadow-md',
+                dictation: 'bg-rose-600 text-white shadow-md',
+                settings: 'bg-amber-500 text-white shadow-md'
+            };
+            activeBtn.className = `tab-btn py-2.5 sm:py-3 px-2 rounded-xl font-bold text-sm sm:text-base transition-all flex items-center justify-center gap-1.5 ${colorMap[tabName]}`;
+
+            if (tabName === 'settings') {
+                refreshManagementUI();
+            }
+        }
+
+        // ==========================================
+        // 6. 單字模式邏輯 (Vocabulary Mode)
+        // ==========================================
+        function startVocab() {
+            if (gameData.vocab.length === 0) {
+                showToast("未有單字資料！請先去「課文設定」加入單字。", "warning");
+                switchTab('settings');
+                return;
+            }
+            document.getElementById('vocabInput').disabled = false;
+            document.getElementById('vocabSubmitBtn').disabled = false;
+            document.getElementById('vocabSpeakBtn').disabled = false;
+            document.getElementById('vocabStartBtn').textContent = "⏭️ 換下一個字";
+            nextVocab();
+        }
+
+        function nextVocab() {
+            isVocabLocked = false;
+            currentVocab = getWeightedRandomItem(gameData.vocab, currentVocab);
+            
+            const wordEl = document.getElementById('vocabTargetWord');
+            wordEl.textContent = currentVocab;
+            wordEl.className = "font-kid text-4xl sm:text-6xl font-bold text-blue-900 tracking-wider break-words select-none";
+
+            // 顯示是否為錯題溫習字
+            const badge = document.getElementById('vocabMistakeBadge');
+            if ((gameData.mistakes[currentVocab] || 0) > 0) {
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+
+            const inputEl = document.getElementById('vocabInput');
+            inputEl.disabled = false;
+            inputEl.value = "";
+            inputEl.focus();
+
+            document.getElementById('vocabFeedback').innerHTML = `<span class="text-slate-500 text-base">✏️ 請打出上面嘅單字</span>`;
+            speakText(currentVocab);
+        }
+
+        function speakCurrentVocab() {
+            if (currentVocab) speakText(currentVocab);
+        }
+
+        function checkVocab() {
+            if (isVocabLocked || !currentVocab) return;
+            const inputEl = document.getElementById('vocabInput');
+            const typed = inputEl.value.trim().toLowerCase();
+            if (!typed) return;
+
+            const card = document.getElementById('vocabCard');
+            const feedback = document.getElementById('vocabFeedback');
+
+            if (typed === currentVocab.toLowerCase()) {
+                isVocabLocked = true;
+                inputEl.disabled = true;
+                playToneEffect('success');
+                recordSuccess(currentVocab);
+
+                card.classList.remove('animate-pop');
+                void card.offsetWidth; // 觸發重繪
+                card.classList.add('animate-pop');
+
+                feedback.innerHTML = `<span class="text-emerald-600">✅ 好叻呀！完全正確！</span>`;
+                setTimeout(nextVocab, 1000);
+            } else {
+                playToneEffect('error');
+                recordMistake(currentVocab);
+
+                card.classList.remove('animate-shake');
+                void card.offsetWidth;
+                card.classList.add('animate-shake');
+
+                document.getElementById('vocabTargetWord').classList.replace('text-blue-900', 'text-rose-600');
+                feedback.innerHTML = `<span class="text-rose-600">❌ 串錯少少，再試多次！正確係：<u class="ml-1">${currentVocab}</u></span>`;
+                inputEl.select();
+                inputEl.focus();
+                speakText(currentVocab);
+            }
+        }
+
+        // ==========================================
+        // 7. 句子聽寫模式邏輯 (Dictation Mode)
+        // ==========================================
+        function startDictation() {
+            if (gameData.sentences.length === 0) {
+                showToast("未有句子資料！請先去「課文設定」貼上課文。", "warning");
+                switchTab('settings');
+                return;
+            }
+            document.getElementById('dictInput').disabled = false;
+            document.getElementById('dictSubmitBtn').disabled = false;
+            document.getElementById('dictSpeakBtn').disabled = false;
+            document.getElementById('dictStartBtn').textContent = "⏭️ 跳過，換下一句";
+            nextSentence();
+        }
+
+        function nextSentence() {
+            isDictLocked = false;
+            currentSentence = getWeightedRandomItem(gameData.sentences, currentSentence);
+
+            const badge = document.getElementById('dictMistakeBadge');
+            if ((gameData.mistakes[currentSentence] || 0) > 0) {
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+
+            document.getElementById('dictStatusText').textContent = "🔊 請細心聽語音，然後打出句子...";
+            document.getElementById('dictAnswerBox').classList.add('hidden');
+            document.getElementById('dictFeedback').innerHTML = "";
+
+            const inputEl = document.getElementById('dictInput');
+            inputEl.disabled = false;
+            inputEl.value = "";
+            inputEl.focus();
+
+            speakText(currentSentence);
+        }
+
+        function speakCurrentSentence() {
+            if (currentSentence) speakText(currentSentence);
+        }
+
+        function cleanTextForCompare(str) {
+            // 移除標點符號、轉小階、合併多餘空格（寛鬆比對）
+            return str.replace(/[^\w\s]/g, '').trim().toLowerCase().replace(/\s+/g, ' ');
+        }
+
+        function checkDictation() {
+            if (isDictLocked || !currentSentence) return;
+            const inputEl = document.getElementById('dictInput');
+            const typed = inputEl.value;
+            if (!typed.trim()) return;
+
+            const card = document.getElementById('dictCard');
+            const feedback = document.getElementById('dictFeedback');
+
+            const typedClean = cleanTextForCompare(typed);
+            const targetClean = cleanTextForCompare(currentSentence);
+
+            if (typedClean === targetClean) {
+                isDictLocked = true;
+                inputEl.disabled = true;
+                playToneEffect('success');
+                recordSuccess(currentSentence);
+
+                card.classList.remove('animate-pop');
+                void card.offsetWidth;
+                card.classList.add('animate-pop');
+
+                document.getElementById('dictAnswerBox').classList.add('hidden');
+                feedback.innerHTML = `<span class="text-emerald-600">✅ 好叻呀！聽寫完全正確！</span>`;
+                setTimeout(nextSentence, 1200);
+            } else {
+                playToneEffect('error');
+                recordMistake(currentSentence);
+
+                card.classList.remove('animate-shake');
+                void card.offsetWidth;
+                card.classList.add('animate-shake');
+
+                feedback.innerHTML = `<span class="text-rose-600">❌ 有啲錯漏，睇下正確句子再試過：</span>`;
+                document.getElementById('dictCorrectSentence').textContent = currentSentence;
+                document.getElementById('dictAnswerBox').classList.remove('hidden');
+                inputEl.focus();
+            }
+        }
+
+        // ==========================================
+        // 8. 課文設定、管理與連結分享
+        // ==========================================
+        function addVocabWords() {
+            const input = document.getElementById('addVocabInput');
+            const raw = input.value.trim();
+            if (!raw) return;
+
+            // 支援逗號或換行一次過加入多個單字
+            const parts = raw.split(/[,，\n]+/).map(s => s.trim()).filter(Boolean);
+            let addedCount = 0;
+            parts.forEach(word => {
+                if (!gameData.vocab.includes(word)) {
+                    gameData.vocab.push(word);
+                    addedCount++;
+                }
+            });
+
+            input.value = "";
+            refreshManagementUI();
+            if (addedCount > 0) {
+                triggerCloudSave(true);
+                showToast(`✅ 成功加入 ${addedCount} 個新單字並同步到雲端！`);
+            } else {
+                showToast("呢啲單字已經喺題庫入面啦！", "warning");
+            }
+        }
+
+        function addPassageSentences() {
+            const textarea = document.getElementById('addPassageInput');
+            const raw = textarea.value.trim();
+            if (!raw) return;
+
+            // 按句號、問號、感嘆號或換行自動分句
+            const rawSentences = raw.split(/(?<=[.!?])\s+|\n+/);
+            let addedCount = 0;
+            rawSentences.forEach(s => {
+                const clean = s.trim();
+                if (clean && !gameData.sentences.includes(clean)) {
+                    gameData.sentences.push(clean);
+                    addedCount++;
+                }
+            });
+
+            textarea.value = "";
+            refreshManagementUI();
+            if (addedCount > 0) {
+                triggerCloudSave(true);
+                showToast(`✅ 成功拆出並同步 ${addedCount} 句新句子！`);
+            } else {
+                showToast("無發現新句子，或者句子已經存在。", "warning");
+            }
+        }
+
+        function refreshManagementUI() {
+            document.getElementById('manageVocabArea').value = gameData.vocab.join('\n');
+            document.getElementById('manageSentenceArea').value = gameData.sentences.join('\n');
+            document.getElementById('vocabCountTag').textContent = `${gameData.vocab.length} 個單字`;
+            document.getElementById('sentenceCountTag').textContent = `${gameData.sentences.length} 句句子`;
+
+            const mistakeKeys = Object.keys(gameData.mistakes);
+            document.getElementById('mistakeSummaryText').textContent = mistakeKeys.length > 0
+                ? `目前有 ${mistakeKeys.length} 個重點錯題正在加強練習`
+                : `目前無錯題記錄`;
+        }
+
+        function saveManagedChanges() {
+            const newVocab = document.getElementById('manageVocabArea').value
+                .split('\n').map(s => s.trim()).filter(Boolean);
+            const newSentences = document.getElementById('manageSentenceArea').value
+                .split('\n').map(s => s.trim()).filter(Boolean);
+
+            // 去重
+            gameData.vocab = [...new Set(newVocab)];
+            gameData.sentences = [...new Set(newSentences)];
+            refreshManagementUI();
+            triggerCloudSave(true);
+            showToast("💾 題庫修改已更新並同步！");
+        }
+
+        function copyCloudShareLink() {
+            if (typeof window.copyRoomUrlToClipboard === 'function') {
+                window.copyRoomUrlToClipboard();
+            }
+        }
+
+        function createNewCloudRoom() {
+            if (typeof window.generateAndConnectNewRoom === 'function') {
+                window.generateAndConnectNewRoom();
+            }
+        }
+
+        function joinCloudRoomByInput() {
+            const input = document.getElementById('joinRoomInput');
+            const code = input.value.trim().toUpperCase();
+            if (!code || code.length < 4) {
+                showToast("請輸入正確嘅家庭同步碼！", "warning");
+                return;
+            }
+            if (typeof window.connectToCloudRoom === 'function') {
+                window.connectToCloudRoom(code, true);
+                input.value = "";
+            }
+        }
+
+        function loadFromUrlHash() {
+            try {
+                const hash = window.location.hash;
+                if (hash && hash.startsWith('#lesson=')) {
+                    const encoded = hash.replace('#lesson=', '');
+                    const jsonStr = decodeURIComponent(atob(encoded));
+                    const parsed = JSON.parse(jsonStr);
+                    if (Array.isArray(parsed.v)) gameData.vocab = parsed.v;
+                    if (Array.isArray(parsed.s)) gameData.sentences = parsed.s;
+                    if (typeof parsed.r === 'number') syncSpeed(parsed.r, true);
+                    showToast("📚 已載入連結入面嘅課文內容！");
+                }
+            } catch (e) {
+                console.warn("Invalid URL hash data");
+            }
+        }
+
+        function exportJsonFile() {
+            saveManagedChanges();
+            const dataStr = JSON.stringify(gameData, null, 2);
+            const blob = new Blob([dataStr], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = "kids_typing_data.json";
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast("📥 已下載課文備份檔！");
+        }
+
+        function importJsonFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const parsed = JSON.parse(e.target.result);
+                    if (Array.isArray(parsed.vocab)) gameData.vocab = parsed.vocab;
+                    if (Array.isArray(parsed.sentences)) gameData.sentences = parsed.sentences;
+                    if (parsed.mistakes) gameData.mistakes = parsed.mistakes;
+                    if (parsed.speechRate) syncSpeed(parsed.speechRate, true);
+                    refreshManagementUI();
+                    triggerCloudSave(true);
+                    showToast("📤 成功匯入課文並同步到雲端！");
+                } catch (err) {
+                    showToast("❌ 檔案格式唔正確，請選擇有效的 JSON 檔。", "warning");
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = "";
+        }
+
+        // ==========================================
+        // 9. 自訂提示與確認視窗工具
+        // ==========================================
+        let toastTimer = null;
+        function showToast(msg, type = "info") {
+            const toast = document.getElementById('toastNotification');
+            const content = document.getElementById('toastContent');
+            content.textContent = msg;
+            content.className = type === "warning"
+                ? "bg-amber-600 text-white px-5 py-3 rounded-2xl shadow-xl font-bold text-sm sm:text-base flex items-center gap-2"
+                : "bg-slate-800 text-white px-5 py-3 rounded-2xl shadow-xl font-bold text-sm sm:text-base flex items-center gap-2";
+
+            toast.classList.remove('opacity-0', 'translate-y-4');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-4');
+            }, 3000);
+        }
+
+        function openResetConfirm() {
+            document.getElementById('confirmModal').classList.remove('hidden');
+        }
+
+        function closeResetConfirm() {
+            document.getElementById('confirmModal').classList.add('hidden');
+        }
+
+        function confirmResetMistakes() {
+            gameData.mistakes = {};
+            refreshManagementUI();
+            closeResetConfirm();
+            triggerCloudSave(true);
+            showToast("✨ 已清除錯題記錄並同步！");
+        }
+    </script>
+
+    <!-- ========================================== -->
+    <!-- 10. 雲端即時自動同步模組                     -->
+    <!-- ========================================== -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const rawConfig = typeof __firebase_config !== 'undefined' ? __firebase_config : null;
+
+        let db = null;
+        let auth = null;
+        let currentUser = null;
+        let currentRoomCode = "";
+        let unsubscribeRoom = null;
+
+        function setCloudBadge(state, text) {
+            const dot = document.getElementById('cloudStatusDot');
+            const label = document.getElementById('cloudStatusText');
+            const badge = document.getElementById('cloudStatusBadge');
+            if (!dot || !label || !badge) return;
+
+            label.textContent = text;
+            if (state === 'connected') {
+                dot.className = "w-2 h-2 rounded-full bg-emerald-500 animate-pulse";
+                badge.className = "flex items-center gap-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-3 py-2 rounded-2xl border border-emerald-200/80 text-xs sm:text-sm font-bold transition-all";
+            } else if (state === 'syncing') {
+                dot.className = "w-2 h-2 rounded-full bg-amber-500 animate-ping";
+                badge.className = "flex items-center gap-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 px-3 py-2 rounded-2xl border border-amber-200/80 text-xs sm:text-sm font-bold transition-all";
+            } else {
+                dot.className = "w-2 h-2 rounded-full bg-slate-400";
+                badge.className = "flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-2 rounded-2xl border border-slate-200/80 text-xs sm:text-sm font-bold transition-all";
+            }
+        }
+
+        function generateRandomCode() {
+            const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // 排除易混淆字母 I, O, 0, 1
+            let result = "";
+            for (let i = 0; i < 6; i++) {
+                result += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return result;
+        }
+
+        function getRoomCodeFromUrl() {
+            const hash = window.location.hash || "";
+            const match = hash.match(/room=([A-Za-z0-9_-]+)/);
+            if (match && match[1]) {
+                return match[1].toUpperCase();
+            }
+            return null;
+        }
+
+        function updateUrlRoomHash(code) {
+            try {
+                window.history.replaceState(null, '', `#room=${code}`);
+            } catch (e) {
+                // 忽略部分環境限制
+            }
+            const displayEl = document.getElementById('currentRoomCodeDisplay');
+            if (displayEl) displayEl.textContent = code;
+        }
+
+        window.pushGameDataToCloud = async function() {
+            if (!db || !currentUser || !currentRoomCode) return;
+            try {
+                setCloudBadge('syncing', '同步中...');
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'typing_rooms', currentRoomCode);
+                await setDoc(docRef, {
+                    vocab: gameData.vocab,
+                    sentences: gameData.sentences,
+                    mistakes: gameData.mistakes,
+                    speechRate: gameData.speechRate,
+                    score: score,
+                    streak: streak,
+                    updatedAt: Date.now()
+                }, { merge: true });
+                setCloudBadge('connected', `☁️ 同步碼: ${currentRoomCode}`);
+            } catch (err) {
+                console.error("Cloud save failed:", err);
+                setCloudBadge('offline', '⚠️ 同步暫停');
+            }
+        };
+
+        window.connectToCloudRoom = function(code, isManualJoin = false) {
+            if (!db || !currentUser) return;
+            const cleanCode = code.trim().toUpperCase();
+            if (!cleanCode) return;
+
+            if (unsubscribeRoom) {
+                unsubscribeRoom();
+                unsubscribeRoom = null;
+            }
+
+            currentRoomCode = cleanCode;
+            updateUrlRoomHash(currentRoomCode);
+            setCloudBadge('syncing', '連線中...');
+
+            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'typing_rooms', currentRoomCode);
+            let isFirstSnapshot = true;
+
+            unsubscribeRoom = onSnapshot(docRef, (snapshot) => {
+                if (snapshot.exists()) {
+                    const data = snapshot.data();
+                    isApplyingRemoteUpdate = true;
+                    try {
+                        if (Array.isArray(data.vocab)) gameData.vocab = data.vocab;
+                        if (Array.isArray(data.sentences)) gameData.sentences = data.sentences;
+                        if (data.mistakes && typeof data.mistakes === 'object') gameData.mistakes = data.mistakes;
+                        if (typeof data.speechRate === 'number') syncSpeed(data.speechRate, true);
+                        if (typeof data.score === 'number') score = data.score;
+                        if (typeof data.streak === 'number') streak = data.streak;
+
+                        refreshManagementUI();
+                        updateScoreUI();
+                    } finally {
+                        isApplyingRemoteUpdate = false;
+                    }
+
+                    setCloudBadge('connected', `☁️ 同步碼: ${currentRoomCode}`);
+                    if (isFirstSnapshot && isManualJoin) {
+                        showToast(`✅ 成功連線到家庭同步碼 ${currentRoomCode}！`);
+                    }
+                } else {
+                    // 若該同步碼尚未有雲端資料，將目前畫面資料初始化寫入雲端
+                    window.pushGameDataToCloud();
+                    if (isFirstSnapshot && isManualJoin) {
+                        showToast(`✨ 已建立並同步至新家庭碼 ${currentRoomCode}！`);
+                    }
+                }
+                isFirstSnapshot = false;
+            }, (error) => {
+                console.error("Cloud listener error:", error);
+                setCloudBadge('offline', '⚠️ 連線異常');
+            });
+        };
+
+        window.generateAndConnectNewRoom = function() {
+            const newCode = generateRandomCode();
+            window.connectToCloudRoom(newCode, true);
+        };
+
+        window.copyRoomUrlToClipboard = function() {
+            if (!currentRoomCode) return;
+            const baseUrl = window.location.href.split('#')[0];
+            const shareUrl = `${baseUrl}#room=${currentRoomCode}`;
+
+            const tempInput = document.createElement('textarea');
+            tempInput.value = shareUrl;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempInput);
+
+            showToast(`🔗 已複製同步連結（同步碼：${currentRoomCode}）！`);
+        };
+
+        async function initCloudSync() {
+            if (!rawConfig) {
+                setCloudBadge('offline', '單機模式');
+                return;
+            }
+            try {
+                const firebaseConfig = JSON.parse(rawConfig);
+                const app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+
+                // 必須先完成驗證，先可以存取雲端資料
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    const cred = await signInWithCustomToken(auth, __initial_auth_token);
+                    currentUser = cred.user;
+                } else {
+                    const cred = await signInAnonymously(auth);
+                    currentUser = cred.user;
+                }
+
+                const initialCode = getRoomCodeFromUrl() || generateRandomCode();
+                window.connectToCloudRoom(initialCode, false);
+            } catch (err) {
+                console.error("Cloud init error:", err);
+                setCloudBadge('offline', '單機模式');
+            }
+        }
+
+        initCloudSync();
+    </script>
+</body>
+</html>
